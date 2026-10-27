@@ -88,6 +88,8 @@ curl -F file=@receipt.png http://localhost:8080/ocr
 
 ## 模型
 
+仓库内置 tiny 档（det/rec/字典）可直接跑；其余档位按下方说明自行下载到 `models/`（不入库）。
+
 布局（tiny 已验证）：
 
 ```
