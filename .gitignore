@@ -1,0 +1,5 @@
+# 构建产物（任意层级的 target，含 java 下所有模块）
+**/target/
+**/.mvn/
+dist/
+*.class

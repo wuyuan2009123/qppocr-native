@@ -1,0 +1,128 @@
+name: build
+
+# 矩阵构建：
+#   build-native  —— qppocr-capi 原生库（dll / so / dylib，含 Windows ARM64）
+#   package-java  —— qppocr-core / spring-boot-starter / solon-plugin 的 jar
+# 打 tag（v*）时 release job 把全部产物挂到 GitHub Release。
+# 仓库不内置 qppocr 源码——capi 直接从 crates.io 依赖 qppocr。
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build-native:
+    name: native ${{ matrix.os }} / ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            lib: qppocr_capi.dll
+          - os: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            lib: qppocr_capi.dll
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            lib: libqppocr_capi.so
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            lib: libqppocr_capi.so
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            lib: libqppocr_capi.dylib
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            lib: libqppocr_capi.dylib
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        run: rustup toolchain install stable --profile minimal --target ${{ matrix.target }}
+
+      - name: Install aarch64-linux cross linker
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Configure cross linker
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          mkdir -p .cargo
+          printf '[target.aarch64-unknown-linux-gnu]\nlinker = "aarch64-linux-gnu-gcc"\n' >> .cargo/config.toml
+
+      - name: Build
+        working-directory: capi
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package
+        shell: bash
+        run: |
+          out="dist/qppocr-capi-${{ matrix.target }}"
+          mkdir -p "$out"
+          cp "capi/target/${{ matrix.target }}/release/${{ matrix.lib }}" "$out/"
+          cp capi/include/qppocr.h "$out/"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qppocr-capi-${{ matrix.target }}
+          path: dist/qppocr-capi-${{ matrix.target }}
+
+  package-java:
+    name: java jars
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Maven package
+        working-directory: java
+        run: mvn -B -ntp package -DskipTests
+
+      - name: Collect jars
+        run: |
+          mkdir -p dist/java
+          for m in qppocr-core qppocr-spring-boot-starter qppocr-solon-plugin; do
+            cp java/$m/target/$m-*.jar dist/java/
+          done
+          # 两个 server 的可执行包一并带上
+          cp java/qppocr-server-springboot/target/qppocr-server-springboot-*.jar dist/java/
+          cp java/qppocr-server-solon/target/qppocr-server-solon-*.jar dist/java/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qppocr-java
+          path: dist/java
+
+  release:
+    name: GitHub Release
+    needs: [build-native, package-java]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Zip per-target native packages
+        run: |
+          cd release-artifacts
+          for d in qppocr-capi-*; do
+            (cd "$d" && zip -r "../$d.zip" .)
+          done
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-artifacts/qppocr-capi-*.zip
+            release-artifacts/qppocr-java/*.jar

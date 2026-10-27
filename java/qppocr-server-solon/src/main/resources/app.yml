@@ -1,0 +1,10 @@
+server.port: 8081
+
+qppocr:
+  modelsDir: ./models
+  tier: tiny
+  device: auto
+  preset: balanced
+  threads: 0
+  detectOrientation: true
+  verifySha256: true

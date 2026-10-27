@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.github.qppocr</groupId>
+    <artifactId>qppocr-native-parent</artifactId>
+    <version>0.1.0</version>
+    <packaging>pom</packaging>
+    <name>qppocr-native-parent</name>
+    <description>qppocr OCR 引擎的多语言接入：Java core / Spring Boot starter / Solon plugin / server</description>
+
+    <modules>
+        <module>qppocr-core</module>
+        <module>qppocr-spring-boot-starter</module>
+        <module>qppocr-solon-plugin</module>
+        <module>qppocr-server-springboot</module>
+        <module>qppocr-server-solon</module>
+    </modules>
+
+    <properties>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jna.version>5.19.1</jna.version>
+        <jackson.version>3.1.7</jackson.version>
+        <spring-boot.version>4.1.2</spring-boot.version>
+        <solon.version>4.1.1</solon.version>
+    </properties>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <parameters>true</parameters>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>net.java.dev.jna</groupId>
+                <artifactId>jna</artifactId>
+                <version>${jna.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.qppocr</groupId>
+                <artifactId>qppocr-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>

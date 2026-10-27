@@ -1,0 +1,17 @@
+server:
+  port: 8080
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+qppocr:
+  models-dir: ./models        # 也可用环境变量 / 启动参数覆盖
+  tier: tiny
+  device: auto        # GPU 优先，不可用回退 CPU
+  preset: balanced
+  threads: 0
+  detect-orientation: true
+  verify-sha256: true
